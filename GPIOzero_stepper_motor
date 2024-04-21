@@ -1,0 +1,62 @@
+from gpiozero import LED, Button
+import time
+
+# Pin Configuration
+RED_PIN = 17
+GREEN_PIN = 27
+BLUE_PIN = 22
+BUTTON1_PIN = 23
+BUTTON2_PIN = 24
+LMMAX_PIN = 6
+LMMIN_PIN = 12
+PULSE_PIN = 16
+DIRECTION_PIN = 20
+ENABLE_PIN = 21
+
+# GPIO Setup
+red_led = LED(RED_PIN)
+green_led = LED(GREEN_PIN)
+blue_led = LED(BLUE_PIN)
+button1 = Button(BUTTON1_PIN)
+button2 = Button(BUTTON2_PIN)
+
+# Function to set LED colors
+def set_leds(red, green, blue):
+    red_led.value = red
+    green_led.value = green
+    blue_led.value = blue
+
+# Stepper Motor Movement Function
+def stepper_movement(direction, steps_per_second, stop_condition, button_in, button_out):
+    enable_pin.value = False
+    direction_pin.value = direction
+    while not stop_condition.is_active and button_in.is_active and not button_out.is_active:
+        pulse_pin.on()
+        time.sleep(1 / (2 * steps_per_second))
+        pulse_pin.off()
+        time.sleep(1 / (2 * steps_per_second))
+    pulse_pin.off()
+
+# Main Function
+def main():
+    set_leds(0, 1, 0)  # Initial state: Green LED ON, Red and Blue OFF
+    try:
+        while True:
+            if button1.is_active:
+                stepper_movement(False, 100, lmax_button, button1, button2)
+            if button2.is_active:
+                stepper_movement(True, 100, lmin_button, button2, button1)
+            if not button1.is_active and not button2.is_active:
+                enable_pin.value = True
+            else:
+                enable_pin.value = False
+    except KeyboardInterrupt:
+        pass
+    finally:
+        set_leds(0, 0, 0)  # Turn off all LEDs
+        enable_pin.close()
+        direction_pin.close()
+        pulse_pin.close()
+
+if __name__ == "__main__":
+    main()
