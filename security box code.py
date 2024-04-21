@@ -59,6 +59,8 @@ def led_update_thread():
             GPIO.output(RED_PIN, GPIO.LOW)
             GPIO.output(GREEN_PIN, GPIO.HIGH)
             GPIO.output(BLUE_PIN, GPIO.LOW)
+        if GPIO.input(BUTTON1_PIN) == GPIO.LOW and GPIO.input(BUTTON2_PIN) == GPIO.LOW:
+            GPIO.output(ENABLE_PIN, GPIO.LOW)
         time.sleep(0.1)
 led_thread = threading.Thread(target=led_update_thread)
 led_thread.start()
@@ -252,19 +254,24 @@ def main():
             enroll_finger(get_num())
         if c == "f":
             exit=False
-            print("Security box activated(Press anything to exit)")
+            print("Security box activated(Press anything letter to exit)")
             try:
                 while not(exit) :
-                    if get_fingerprint():
-                        current_finger_id=finger.finger_id
-                        if(current_finger_id==previous_finger_id):
-                            close_box(steps_per_second)
+                    try:
+                        if get_fingerprint():
+                            current_finger_id=finger.finger_id
+                            if(current_finger_id==previous_finger_id):
+                                close_box(steps_per_second)
+                            else:
+                                open_box(steps_per_second)
+                            print("Detected #", finger.finger_id, "with confidence", finger.confidence)
+                            previous_finger_id=finger.finger_id
                         else:
-                            open_box(steps_per_second)
-                        print("Detected #", finger.finger_id, "with confidence", finger.confidence)
-                        previous_finger_id=finger.finger_id
-                    else:
-                        print("Finger not found")
+                            print("Finger not found")
+                        pass
+                    except KeyboardInterrupt:
+                        print("Keyboard interrupt detected. Exiting...")
+                        exit=True
                 pass
             except KeyboardInterrupt:
                 print("Keyboard interrupt detected. Exiting...")
