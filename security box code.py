@@ -59,8 +59,6 @@ def led_update_thread():
             GPIO.output(RED_PIN, GPIO.LOW)
             GPIO.output(GREEN_PIN, GPIO.HIGH)
             GPIO.output(BLUE_PIN, GPIO.LOW)
-        if GPIO.input(BUTTON1_PIN) == GPIO.LOW and GPIO.input(BUTTON2_PIN) == GPIO.LOW:
-            GPIO.output(ENABLE_PIN, GPIO.LOW)
         time.sleep(0.1)
 led_thread = threading.Thread(target=led_update_thread)
 led_thread.start()
@@ -134,37 +132,39 @@ def enroll_finger(location):
     """Take a 2 finger images and template it, then store in 'location'"""
     for fingerimg in range(1, 3):
         if fingerimg == 1:
-            print("Place finger on sensor...", end="")
+            print("Place finger on sensor...", end="",flush=True)
+            sensor=1
         else:
-            print("Place same finger again...", end="")
+            print("Place same finger again...", end="",flush=True)
 
+        time.sleep(1)
         while True:
             i = finger.get_image()
             if i == adafruit_fingerprint.OK:
-                print("Image taken")
+                print("Image taken",flush=True)
                 break
             if i == adafruit_fingerprint.NOFINGER:
-                print(".", end="")
+                print(".", end="",flush=True)
             elif i == adafruit_fingerprint.IMAGEFAIL:
-                print("Imaging error")
+                print("Imaging error",flush=True)
                 return False
             else:
-                print("Other error")
+                print("Other error",flush=True)
                 return False
 
-        print("Templating...", end="")
+        print("Templating...", end="",flush=True)
         i = finger.image_2_tz(fingerimg)
         if i == adafruit_fingerprint.OK:
-            print("Templated")
+            print("Templated",flush=True)
         else:
             if i == adafruit_fingerprint.IMAGEMESS:
-                print("Image too messy")
+                print("Image too messy",flush=True)
             elif i == adafruit_fingerprint.FEATUREFAIL:
-                print("Could not identify features")
+                print("Could not identify features",flush=True)
             elif i == adafruit_fingerprint.INVALIDIMAGE:
-                print("Image invalid")
+                print("Image invalid",flush=True)
             else:
-                print("Other error")
+                print("Other error",flush=True)
             return False
 
         if fingerimg == 1:
@@ -199,15 +199,11 @@ def enroll_finger(location):
 
     return True
 
-
 def get_num():
     """Use input() to get a valid number from 1 to 127. Retry till success!"""
     i = 0
     while (i > 127) or (i < 1):
-        try:
             i = int(input("Enter ID # from 1-127: "))
-        except ValueError:
-            pass
     return i
 
 
@@ -215,7 +211,7 @@ def get_num():
 def stepper_movement(direction, steps_per_second, stop_condition, buttonIn, buttonOut):
     GPIO.output(ENABLE_PIN, GPIO.LOW)
     GPIO.output(DIRECTION_PIN, direction)
-    while (not GPIO.input(stop_condition)) and GPIO.input(buttonIn) == GPIO.LOW and GPIO.input(buttonOut) == GPIO.HIGH:
+    while (not GPIO.input(stop_condition)):
         GPIO.output(PULSE_PIN, GPIO.HIGH)
         time.sleep(1/(2*steps_per_second))
         GPIO.output(PULSE_PIN, GPIO.LOW)
@@ -230,6 +226,12 @@ def close_box(steps_per_second):
 def open_box(steps_per_second):
     stepper_movement(GPIO.HIGH, steps_per_second, LMMIN_PIN, BUTTON2_PIN, BUTTON1_PIN)
     return
+    
+def motor_move(direction):
+    if direction == 'cw':
+        stepper_movement(GPIO.HIGH, 50, LMMIN_PIN, BUTTON2_PIN, BUTTON1_PIN)
+    if direction == 'ccw':
+        stepper_movement(GPIO.LOW, 50, LMMAX_PIN, BUTTON1_PIN, BUTTON2_PIN)
 
 ####################### Main ############################
 def main():
@@ -237,7 +239,7 @@ def main():
     previous_finger_id=0
     current_finger_id=0
 
-    steps_per_second=120
+    steps_per_second=50
 
     while True:
         print("----------------")
@@ -254,24 +256,21 @@ def main():
             enroll_finger(get_num())
         if c == "f":
             exit=False
-            print("Security box activated(Press anything letter to exit)")
+            print("Security box activated(Press anything to exit)")
             try:
                 while not(exit) :
-                    try:
-                        if get_fingerprint():
-                            current_finger_id=finger.finger_id
-                            if(current_finger_id==previous_finger_id):
-                                close_box(steps_per_second)
-                            else:
-                                open_box(steps_per_second)
-                            print("Detected #", finger.finger_id, "with confidence", finger.confidence)
-                            previous_finger_id=finger.finger_id
+                    if get_fingerprint():
+                        current_finger_id=finger.finger_id
+                        if(current_finger_id==previous_finger_id):
+                            close_box(steps_per_second)
+                            previous_finger_id=0
                         else:
-                            print("Finger not found")
-                        pass
-                    except KeyboardInterrupt:
-                        print("Keyboard interrupt detected. Exiting...")
-                        exit=True
+                            open_box(steps_per_second)
+                        print("Detected #", finger.finger_id, "with confidence", finger.confidence)
+                        previous_finger_id=finger.finger_id
+                    else:
+                        print("Finger not found, please try again")
+                        time.sleep(1)
                 pass
             except KeyboardInterrupt:
                 print("Keyboard interrupt detected. Exiting...")
@@ -283,4 +282,6 @@ def main():
                 print("Failed to delete")
 
 if __name__ == "__main__":
-    main()
+    #main()
+    #motor_move('ccw')
+    #motor_move('cw')
