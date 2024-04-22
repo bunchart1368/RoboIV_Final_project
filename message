@@ -227,6 +227,12 @@ def open_box(steps_per_second):
     stepper_movement(GPIO.HIGH, steps_per_second, LMMIN_PIN, BUTTON2_PIN, BUTTON1_PIN)
     return
 
+def motor_move(direction):
+    if direction == 'cw':
+        stepper_movement(GPIO.HIGH, 50, LMMIN_PIN, BUTTON2_PIN, BUTTON1_PIN)
+    if direction == 'ccw':
+        stepper_movement(GPIO.LOW, 50, LMMAX_PIN, BUTTON1_PIN, BUTTON2_PIN)
+
 ####################### Main ############################
 def main():
     #Main parameter
@@ -277,3 +283,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+    #motor_move('cw')
+    #motor_move('ccw')
